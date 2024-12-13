@@ -1,0 +1,170 @@
+---
+title: "Daily Weather Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Daily Weather Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(GHCNr)
+library(terra)  # for handling countries geometries
+```
+
+# Select GHCNd stations
+
+The station inventory file of GHCNd is stored at <https://www.ncei.noaa.gov/products/land-based-station/global-historical-climatology-network-daily>.
+The function `stations()` can read from this source or from a local file, specified with `filename`.
+The inventory can also be downloaded to a file using `download_inventory()`.
+
+```{r download-inventory, eval=FALSE}
+inventory_file <- download_inventory("~/Downloads/ghcn-inventory.txt")
+stations <- stations(inventory_file, variables = "TMAX")
+```
+
+```{r read-inventory}
+stations <- stations(variables = "TMAX")
+```
+
+By specifying `variables = "TMAX"` only the stations that recorded that variable are kept.
+Available variables implemented at the moment are precipitation ("PRCP"), minimum temperature ("TMIN"), and maximum temperature ("TMAX").
+
+Stations spanning a time range can be filtered easily.
+```{r filter-by-year}
+stations <- stations[stations$startYear <= 1990, ]
+stations <- stations[stations$endYear >= 2000, ]
+stations
+```
+
+Spatial filters can also be easily applied.
+Spatial boundaries of countries can be downloaded from <https://www.geoboundaries.org/> using the `get_countr(couuntry_code = ...)` function, where `country_code` is the ISO3 code.
+```{r get-country}
+italy <- get_country("ITA")
+```
+
+`get_countries()` can take several ISO3 codes to return a geometry of multiple countries.
+
+```{r spatial-filter}
+stations <- filter_stations(stations, italy)
+plot(italy)
+points(stations[, c("longitude", "latitude")], pch = 20, col = "dodgerblue")
+```
+
+# Download daily timeseries
+
+Daily timeseries for a station can be downloaded using the `daily()` function.
+In addition to the station ID, `daily()` needs start and end dates of the timeseries.
+These should be provided as strings with the format "YYYY-mm-dd", e.g., "1990-01-01".
+
+```{r daily}
+daily_ts <- daily(
+  stations$station[1],
+  paste("1990", "01", "01", sep = "-"),  # shorten a bit as example
+  paste(stations$endYear[1], "12", "21", sep = "-"),
+  variables = "tmin"
+)
+daily_ts
+```
+
+Multiple stations can also be downloaded at once.
+Too many stations will cause the API to fail.
+```{r multidaily}
+daily_ts <- daily(
+  stations$station,
+  paste("1990", "01", "01", sep = "-"),  # shorten a bit as example
+  paste("1991", "12", "31", sep = "-"),  # shorten a bit as example
+  variables = "tmin"
+)
+daily_ts
+plot(daily_ts, "tmin")
+```
+
+Note the outliers, which are due to flagged records (see below).
+
+Implmented variables are "tmin", "tmax", and "prcp".
+`daily()` returns a table with the value of the variable chosen and associated flags.
+
+## Remove flagged records
+
+Flagged records can be removed using `remove_flagged()`.
+In `remove_flagged()` the argument `strict` (dafault = `FALSE`) specifies which flags to include.
+Flags always removed are:
+```{r flags, echo=FALSE}
+as.list(GHCNr:::.flags(strict = FALSE))
+```
+Whereas setting `strict = TRUE` will cause additional flags to be removed.
+```{r flags-strict, echo=FALSE}
+setdiff(GHCNr:::.flags(strict = TRUE), GHCNr:::.flags(strict = FALSE))
+```
+
+This will also remove the "*_flag=" column.
+```{r remove-flagged}
+daily_ts <- remove_flagged(daily_ts)
+plot(daily_ts, "tmin")
+```
+
+# Temporal coverage
+Coverage of the timeseries can be calculated using `coverage()`.
+```{r daily-coverage}
+station_coverage <- coverage(daily_ts)
+```
+
+The output is a table with coverage by month and year (`monthly_coverage`), by year (`annual_coverage`), and for the whole time period (`period_coverage`).
+`annual_coverage` is constant within the same year and `year` is always a constant.
+This table is useful to inspect stations that may have problematic timeseries, such as 
+```{r low-coverage}
+station_coverage[station_coverage$annual_coverage_tmin < 0.5, ]
+```
+
+Note that missing years are not shown and that `year_coverage` only calculates the number of years that have been covered.
+`period_coverage` calculates the coverage across the whole period, including missing years.
+
+```{r plot-timeseries, echo=FALSE, fig.width=6, fig.height = 4}
+palette <- hcl.colors(length(unique(daily_ts$station)), "Cork")
+with(
+  daily_ts,
+    interaction.plot(
+    date,
+    station,
+    tmin,
+    col = palette,
+    xlab = "Date",
+    ylab = "TMIN",
+    trace.label = "Station",
+    lty = 1
+  )
+)
+```
+
+# Monthly and annual timeseries, climatological normals
+
+The functions `monthly()`, `annual()` nad `normal()` summarized the weather time series to monthly and annual time series and to climatological normal (long-term averages), respectively.
+Summaries are calculated as follows:
+
+  - $T_{min}$ is the minimum daily temperature recorded in the month or the year.
+  - $T_{max}$ is the maximum daily temperature recorded in the month or the year.
+  - $Prcp$ is the cumulative precipitation during the month or year.
+
+`NA`s are removed during calculation.
+
+
+```{r monthly}
+monthly_ts <- monthly(daily_ts)
+monthly_ts
+plot(monthly_ts, "tmin")
+```
+
+```{r annual}
+annual_ts <- annual(daily_ts)
+annual_ts
+plot(annual_ts, "tmin")
+# normals <- normal(daily_ts) # to be implemented
+```
