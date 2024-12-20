@@ -49,11 +49,6 @@
 .drop_flags <- function(x) {
   stopifnot(inherits(x, "ghcn_daily"))
   if (any(grepl("flag", colnames(x)))) {
-    flags <- x |> 
-      select(contains("flag")) |> 
-      mutate(across(everything(), ~ifelse(.x == "", NA, .x))) |> 
-      drop_na()
-    if (nrow(flags >= 1)) warning("Flags found. Consider removing flagged records, e.g. remove_flagged")
     x <- x |> select(-contains("flag"))
   }
   return(x)
@@ -74,8 +69,8 @@
       distinct_all() |> 
       unlist() |> 
       unique()
-    if (any(colnames(GHCNr::.flags(strict = TRUE)) %in% flagged)) {
-      warning("Flags found, considering dropping flagged records. See ?remove_flagged() for details.")
+    if (any(colnames(.flags(strict = TRUE)) %in% flagged)) {
+      warning("Flags found, considering dropping flagged records. See ?remove_flagged for details.")
     }
   }
 }

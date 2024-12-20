@@ -1,5 +1,4 @@
 #' @title The GHCNd Inventory URL
-#' @export
 #' @return The URL of the GHCNd inventory.
 .inventory_url <- function() {
   return("https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-inventory.txt")
@@ -9,11 +8,14 @@
 #'
 #' @importFrom readr read_table
 #' @importFrom dplyr filter
+#' @importFrom curl has_internet
 #'
 #' @export
 #'
-#' @param filename Character of the filename of the inventory, if already downloaded.
+#' @param filename Character, the filename of the inventory, if already downloaded.
 #' @param variables Character, vector of the variables to include.
+#' @param first_year Integer, the year since when data should be recorded.
+#' @param last_year Integer, the year until when data should be recorded.
 #'
 #' @return The table with the GHCNd stations.
 #' 
@@ -27,18 +29,35 @@
 #' download_inventory(dest)
 #' s <- stations(dest)
 #' }
-stations <- function(filename, variables = c("tmin", "tmax", "prcp")) {
+stations <- function(
+  filename,
+  variables = c("tmin", "tmax", "prcp"),
+  first_year,
+  last_year
+) {
   if (missing(filename)) {
+    if (!has_internet()) stop("You do not have access to the internet. Check you connection and try again.")
     src <- .inventory_url()
   } else{
     src <- filename
   }
-  ans <- read_table(
-    src,
-    col_names = c("station", "latitude", "longitude", "variable", "startYear", "endYear"),
-    show_col_types = FALSE
-  ) |> 
-    filter(.data$variable %in% toupper(variables))
+  ans <- tryCatch(
+    read_table(
+      src,
+      col_names = c("station", "latitude", "longitude", "variable", "startYear", "endYear"),
+      show_col_types = FALSE
+    ) |> 
+      filter(.data$variable %in% toupper(variables)),
+    error = function(e) message(errorCondition(e))
+  )
+  if (is.null(ans)) stop(.inventory_url(), " not found.")
+
+  if (!missing(first_year)) {
+    ans <- ans |>filter(.data$startYear <= first_year)
+  }
+  if (!missing(last_year)) {
+    ans <- ans |>filter(.data$endYear >= last_year)
+  }
 
   return(ans)
 }
@@ -87,6 +106,7 @@ download_inventory <- function(filename) {
 filter_stations <- function(stations, roi) {
   stopifnot("longitude" %in% colnames(stations))
   stopifnot("latitude" %in% colnames(stations))
+  stopifnot(inherits(roi, "SpatVector"))
 
   stations <- vect(
     stations,
