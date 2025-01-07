@@ -17,22 +17,22 @@
   variables
 ) {
   if (nchar(strsplit(start_date, "-")[[1]][1]) < 4) {
-    warning("Date format should be YYYY-MM-DD")
+    stop("Date format should be YYYY-MM-DD")
   }
   if (as.numeric(strsplit(start_date, "-")[[1]][2]) > 12) {
-    warning("Date format should be YYYY-MM-DD")
+    stop("Date format should be YYYY-MM-DD")
   }
   if (as.numeric(strsplit(start_date, "-")[[1]][3]) > 31) {
-    warning("Date format should be YYYY-MM-DD")
+    stop("Date format should be YYYY-MM-DD")
   }
   if (nchar(strsplit(end_date, "-")[[1]][1]) < 4) {
-    warning("Date format should be YYYY-MM-DD")
+    stop("Date format should be YYYY-MM-DD")
   }
   if (as.numeric(strsplit(end_date, "-")[[1]][2]) > 12) {
-    warning("Date format should be YYYY-MM-DD")
+    stop("Date format should be YYYY-MM-DD")
   }
   if (as.numeric(strsplit(end_date, "-")[[1]][3]) > 31) {
-    warning("Date format should be YYYY-MM-DD")
+    stop("Date format should be YYYY-MM-DD")
   }
 
   if (length(station_id) > 1) station_id <- paste(station_id, collapse = ",")
@@ -85,8 +85,8 @@
 
 #' @title Download Daily Summaries
 #'
-#' @importFrom dplyr bind_rows mutate rename_with across group_by tally select arrange
-#' @importFrom tidyselect matches contains everything any_of
+#' @importFrom dplyr bind_rows mutate rename_with across group_by select arrange
+#' @importFrom tidyselect contains any_of
 #' @importFrom rlang .data
 #'
 #' @export
@@ -116,7 +116,7 @@ daily <- function(
   stopifnot(is.character(variables))
 
   url <- .daily_url(
-    station_id,
+    unique(station_id),
     start_date,
     end_date,
     variables

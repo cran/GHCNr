@@ -1,4 +1,6 @@
 ## ----include=FALSE------------------------------------------------------------
+# rmarkdown::render("vignettes/daily.Rmd")
+# rmarkdown::render("vignettes/daily.Rmd", rmarkdown::github_document())
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -10,30 +12,36 @@ library(terra)  # for handling countries geometries
 
 ## ----download-inventory, eval=FALSE-------------------------------------------
 #  inventory_file <- download_inventory("~/Downloads/ghcn-inventory.txt")
-#  s <- stations(inventory_file, variables = "TMAX")
+#  s <- stations(
+#    inventory_file,
+#    variables = "TMAX",
+#    first_year = 1990,
+#    last_year = 2000
+#  )
 
 ## ----read-inventory, eval=FALSE-----------------------------------------------
-#  s <- stations(variables = "TMAX")
-
-## ----filter-by-year, eval=FALSE-----------------------------------------------
-#  s <- s[s$startYear <= 1990, ]
-#  s <- s[s$endYear >= 2000, ]
+#  s <- stations(variables = "TMAX", first_year = 1990, last_year = 2000)
 #  s
 #  # A tibble: 16,763 × 6
-#     station     latitude longitude variable startYear endYear
-#     <chr>          <dbl>     <dbl> <chr>        <dbl>   <dbl>
-#   1 AE000041196     25.3     55.5  TMAX          1944    2024
-#   2 AEM00041194     25.3     55.4  TMAX          1983    2024
-#   3 AEM00041217     24.4     54.7  TMAX          1983    2024
-#   4 AFM00040938     34.2     62.2  TMAX          1973    2020
-#   5 AFM00040948     34.6     69.2  TMAX          1966    2021
-#   6 AFM00040990     31.5     65.8  TMAX          1973    2020
-#   7 AG000060390     36.7      3.25 TMAX          1940    2024
-#   8 AG000060590     30.6      2.87 TMAX          1940    2024
-#   9 AG000060611     28.0      9.63 TMAX          1958    2024
-#  10 AG000060680     22.8      5.43 TMAX          1940    2004
+#     station     latitude longitude variable firstYear lastYear
+#     <chr>          <dbl>     <dbl> <chr>        <dbl>    <dbl>
+#   1 AE000041196     25.3     55.5  TMAX          1944     2024
+#   2 AEM00041194     25.3     55.4  TMAX          1983     2024
+#   3 AEM00041217     24.4     54.7  TMAX          1983     2024
+#   4 AFM00040938     34.2     62.2  TMAX          1973     2020
+#   5 AFM00040948     34.6     69.2  TMAX          1966     2021
+#   6 AFM00040990     31.5     65.8  TMAX          1973     2020
+#   7 AG000060390     36.7      3.25 TMAX          1940     2024
+#   8 AG000060590     30.6      2.87 TMAX          1940     2024
+#   9 AG000060611     28.0      9.63 TMAX          1958     2024
+#  10 AG000060680     22.8      5.43 TMAX          1940     2004
 #  # ℹ 16,753 more rows
 #  # ℹ Use `print(n = ...)` to see more rows
+
+## ----filter-by-year, eval=FALSE-----------------------------------------------
+#  
+#  Spatial filters can also be easily applied.
+#  Spatial boundaries of countries can be downloaded from <https://www.geoboundaries.org/> using the `get_countr(couuntry_code = ...)` function, where `country_code` is the ISO3 code.
 
 ## ----get-country, eval=FALSE--------------------------------------------------
 #  italy <- get_country("ITA")
@@ -42,18 +50,18 @@ library(terra)  # for handling countries geometries
 #  s <- filter_stations(s, italy)
 #  s
 #  # A tibble: 41 × 6
-#     station     latitude longitude variable startYear endYear
-#     <chr>          <dbl>     <dbl> <chr>        <dbl>   <dbl>
-#   1 IT000016090     45.4     10.9  TMAX          1951    2024
-#   2 IT000016134     44.2     10.7  TMAX          1951    2024
-#   3 IT000016232     42       15    TMAX          1975    2024
-#   4 IT000016239     41.8     12.6  TMAX          1951    2024
-#   5 IT000016320     40.6     17.9  TMAX          1951    2024
-#   6 IT000016560     39.2      9.05 TMAX          1951    2024
-#   7 IT000160220     46.2     11.0  TMAX          1951    2024
-#   8 IT000162240     42.1     12.2  TMAX          1954    2024
-#   9 IT000162580     41.7     16.0  TMAX          1951    2024
-#  10 ITE00100554     45.5      9.19 TMAX          1763    2008
+#     station     latitude longitude variable firstYear lastYear
+#     <chr>          <dbl>     <dbl> <chr>        <dbl>    <dbl>
+#   1 IT000016090     45.4     10.9  TMAX          1951     2024
+#   2 IT000016134     44.2     10.7  TMAX          1951     2024
+#   3 IT000016232     42       15    TMAX          1975     2024
+#   4 IT000016239     41.8     12.6  TMAX          1951     2024
+#   5 IT000016320     40.6     17.9  TMAX          1951     2024
+#   6 IT000016560     39.2      9.05 TMAX          1951     2024
+#   7 IT000160220     46.2     11.0  TMAX          1951     2024
+#   8 IT000162240     42.1     12.2  TMAX          1954     2024
+#   9 IT000162580     41.7     16.0  TMAX          1951     2024
+#  10 ITE00100554     45.5      9.19 TMAX          1763     2008
 #  # ℹ 31 more rows
 #  # ℹ Use `print(n = ...)` to see more rows
 
@@ -107,6 +115,11 @@ unique(station_coverage[
 monthly_ts <- monthly(daily_ts)
 monthly_ts
 plot(monthly_ts, "tmax")
+
+## ----quarterly----------------------------------------------------------------
+quarterly_ts <- quarterly(daily_ts)
+quarterly_ts
+plot(quarterly_ts, "tmax")
 
 ## ----annual-------------------------------------------------------------------
 annual_ts <- annual(daily_ts)
