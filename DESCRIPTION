@@ -1,6 +1,6 @@
 Package: GHCNr
 Title: Download Weather Station Data from GHCNd
-Version: 1.4.6
+Version: 1.4.7
 Authors@R: 
     person("Emilio", "Berti", , "emilio.berti@idiv.de", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-9286-011X"))
@@ -16,9 +16,9 @@ Depends: R (>= 4.1.0)
 LazyData: true
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2025-10-27 13:12:37 UTC; eb97ziwi
+Packaged: 2026-06-15 12:07:29 UTC; eb97ziwi
 Author: Emilio Berti [aut, cre] (ORCID:
     <https://orcid.org/0000-0001-9286-011X>)
 Maintainer: Emilio Berti <emilio.berti@idiv.de>
 Repository: CRAN
-Date/Publication: 2025-10-27 13:40:02 UTC
+Date/Publication: 2026-06-15 14:10:08 UTC
